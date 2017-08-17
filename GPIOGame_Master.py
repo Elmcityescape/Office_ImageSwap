@@ -3,6 +3,8 @@ from pygame.locals import *
 from time import sleep
 import RPi.GPIO as GPIO
 
+print('ON')
+
 #Define Pin GPIO addresses
 
 Ping=17
@@ -55,6 +57,8 @@ input_value=GPIO.input(Pong)
 #print(str(input_value))
 sleep(0.1)
 
+print('GPIO Setup Complete')
+
 #Set up game display
 
 pygame.init()
@@ -105,6 +109,8 @@ DISPLAYSURF.fill(BLACK)
 
 play = 1
 
+level = 1
+
 for x in range(0,4):
     for y in range(0,4):
         #DISPLAYSURF.blit(imgs[1+x+4*y],(imgx[x],imgy[y]))
@@ -112,24 +118,49 @@ for x in range(0,4):
 pygame.display.flip()
 
 #Game is ready, wait for slave to signal ready
-while True:
+#while True:
     #do nothing
-    if GPIO.input(Pong):
-        print("Pong")
-        GPIO.output(Ping,1)
-        while GPIO.input(Pong):
-            #wait for Slave to respond
-            if not GPIO.input(Pong):
-                break
-        GPIO.output(Ping,0)
-        break
-print("Slave awake and ready")
+#    if GPIO.input(Pong):
+#        print("Pong")
+#        GPIO.output(Ping,1)
+#        while GPIO.input(Pong):
+#            #wait for Slave to respond
+#            if not GPIO.input(Pong):
+#                break
+#        GPIO.output(Ping,0)
+#        break
+#print("Slave awake and ready")
+GPIO.output(SoftKill,1)
+sleep(0.0001)
+GPIO.output(SoftKill,0)
+
+print('Initialized')
+
+wincondition = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+
+Connect=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+LastConnect=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 
 while play:
 
+    #GPIO.output(SoftKill,1)
+    #GPIO.output(SoftKill,0)
+
+
     #Detect wire connectivity
+
+    #Make sure slave is on wire 0
+    wirein=0
+    while not(wirein==1):
+        binary = "0b"
+        for y in range(0,4):
+            binary = binary + str(GPIO.input(Nibble[y]))
+        wirein=int(binary,2)+1
+    
+    
     Connect=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    for x in range(0,size):
+    #sleep(0.1)
+    while wirein < 16:
 
 
         #Game is ready, wait for slave to signal next pin
@@ -137,35 +168,68 @@ while play:
             #do nothing
             if GPIO.input(Pong):
                 break
-        print("Pong")
+#        print("Pong")
         
         binary = "0b"
         for y in range(0,4):
             binary = binary + str(GPIO.input(Nibble[y]))
         wirein=int(binary,2)+1
-        print(str(wirein))
+#        print(str(wirein))
 
         for w in range(0,size):
             input_value = GPIO.input(Pins[w])
             if input_value == 1:
                 Connect[w]=wirein
         #Now signal for next pin
-        print("Ping")
+#        print("Ping")
         GPIO.output(Ping,1)
-        while True:
-            if GPIO.input(Pong) == 1:
-                GPIO.output(Ping,0)
-                break
+        sleep(0.0001)
+        GPIO.output(Ping,0)
+        #while True:
+        #    if GPIO.input(Pong) == 1:
+        #        GPIO.output(Ping,0)
+        #        sleep(0.1)
+        #        break
     #End of pins
-    for a in range(0,size):
-        b=a%4
-        c=a//4
-        DISPLAYSURF.blit(imgs[Connect[a]],(imgx[b],imgy[c]))
-    pygame.display.flip()
-    if Connect == [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+    if not(Connect==LastConnect):
+        for a in range(0,size):
+            b=a%4
+            c=a//4
+            DISPLAYSURF.blit(imgs[Connect[a]],(imgx[b],imgy[c]))
+        pygame.display.flip()
+
+    LastConnect=Connect
+
+    GPIO.output(SoftKill,1)
+    sleep(0.0001)
+    GPIO.output(SoftKill,0)
+    sleep(0.5)
+    
+    if Connect == wincondition:
         print("WIN!")
-        play = 0
-        break
+        level = level + 1
+        random.shuffle(Pins)
+        if level == 3:
+            play = 0
+            break
+        Connect=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        LastConnect=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        DISPLAYSURF.fill(BLACK)
+        pygame.display.flip()
+        sleep(0.2)
+        DISPLAYSURF.fill(WHITE)
+        pygame.display.flip()
+        sleep(0.2)
+        DISPLAYSURF.fill(BLACK)
+        pygame.display.flip()
+        sleep(0.2)
+        DISPLAYSURF.fill(WHITE)
+        pygame.display.flip()
+        sleep(0.2)
+        DISPLAYSURF.fill(BLACK)
+        pygame.display.flip()
+        sleep(0.2)
+        
 
     for event in pygame.event.get():
         if event.type == QUIT:
