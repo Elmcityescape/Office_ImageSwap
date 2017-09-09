@@ -68,19 +68,19 @@ while not (isKill):
         GPIO.output(Nibble[x],0)
 
     #Signal
-    GPIO.output(Pong,1)
+#    GPIO.output(Pong,1)
 
     #wait
-    ready = 0
-    print("Waiting")
-    while not ready:
-        ready = GPIO.input(Ping)
-        isKill= GPIO.input(Kill)
-        if ready:
-            GPIO.output(Pong,0)
-            break
-        if isKill:
-            break
+#    ready = 0
+#    print("Waiting")
+#    while not ready:
+#        ready = GPIO.input(Ping)
+#        isKill= GPIO.input(Kill)
+#        if ready:
+#            GPIO.output(Pong,0)
+#            break
+#        if isKill:
+#            break
         #print("no go")
     #End wait
 
@@ -102,14 +102,13 @@ while not (isKill):
                 big=len(binary)
                 if big == 4:
                     break
-
             #Set up nibble serial bus
             for b in range(0,big):
                 GPIO.output(Nibble[b],int(binary[b]))
 
             #Pong Master, pin is ready
-            GPIO.output(Pong,1)
             sleep(0.01)
+            GPIO.output(Pong,1)
             #wait for ping
             ready = 0
             while not ready:
@@ -117,8 +116,8 @@ while not (isKill):
                 isSoft= GPIO.input(SoftKill)
                 isKill= GPIO.input(Kill)
                 if ready or isKill or isSoft:
+                    GPIO.output(Pong,0)
                     break
-            GPIO.output(Pong,0)
             GPIO.output(Pins[x],0)
 
             isSoft=GPIO.input(SoftKill)
